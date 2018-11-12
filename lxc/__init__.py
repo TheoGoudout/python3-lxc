@@ -351,6 +351,26 @@ class Container(_lxc.Container):
 
         return ips
 
+    def monitor(self, timeout = -1):
+        """
+            Monitor a container.
+            Return a tumple containing the type of message and a value.
+            The message type can be one of:
+              (1) LXC_MONITOR_STATE
+              (2) LXC_MONITOR_PRIORITY
+              (3) LXC_MONITOR_EXIT_CODE
+              (4) LXC_MONITOR_TIMEOUT
+              (5) LXC_MONITOR_ERROR
+            The return value is :
+              (1) A string representing the state
+              (2) A number representing the priority
+              (3) A number representing the exit code of the container
+              (4) Not set
+              (5) Not set
+        """
+
+        return _lxc.Container.monitor(self, timeout)
+
     def rename(self, new_name):
         """
             Rename the container.
@@ -508,3 +528,10 @@ LXC_CLONE_SNAPSHOT = _lxc.LXC_CLONE_SNAPSHOT
 
 # create: create flags
 LXC_CREATE_QUIET = _lxc.LXC_CREATE_QUIET
+
+# monitor: type flags
+LXC_MONITOR_STATE = _lxc.LXC_MONITOR_STATE
+LXC_MONITOR_PRIORITY = _lxc.LXC_MONITOR_PRIORITY
+LXC_MONITOR_EXIT_CODE = _lxc.LXC_MONITOR_EXIT_CODE
+LXC_MONITOR_TIMEOUT = _lxc.LXC_MONITOR_TIMEOUT
+LXC_MONITOR_ERROR = _lxc.LXC_MONITOR_ERROR

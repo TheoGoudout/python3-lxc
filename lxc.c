@@ -1260,6 +1260,43 @@ Container_load_config(Container *self, PyObject *args, PyObject *kwds)
 }
 
 static PyObject *
+Container_monitor(Container *self, PyObject *args, PyObject *kwds)
+{
+    static char *kwlist[] = {"timeout", NULL};
+    int timeout = -1;
+
+    if (! PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &timeout))
+        return NULL;
+
+    struct lxc_monitor mon;
+    PyObject *ret;
+
+    Py_BEGIN_ALLOW_THREADS
+    mon = self->container->monitor(self->container, timeout);
+    Py_END_ALLOW_THREADS
+
+    ret = PyTuple_New(2);
+    PyTuple_SET_ITEM(ret, 0, PyLong_FromLong(mon.type));
+    switch(mon.type) {
+        case lxc_monitor_state:
+            PyTuple_SET_ITEM(ret, 1, PyUnicode_FromString(mon.value.state));
+            break;
+        case lxc_monitor_priority:
+            PyTuple_SET_ITEM(ret, 1, PyLong_FromLong((long)mon.value.priority));
+            break;
+        case lxc_monitor_exit_code:
+            PyTuple_SET_ITEM(ret, 1, PyLong_FromLong((long)mon.value.exit_code));
+            break;
+        case lxc_monitor_timeout:
+        case lxc_monitor_error:
+            Py_INCREF(Py_None);
+            PyTuple_SET_ITEM(ret, 1, Py_None);
+            break;
+    }
+    return ret;
+}
+
+static PyObject *
 Container_reboot(Container *self, PyObject *args, PyObject *kwds)
 {
     if (self->container->reboot(self->container)) {
@@ -1790,6 +1827,13 @@ static PyMethodDef Container_methods[] = {
      "Read the container configuration from its default "
      "location or from an alternative location if provided."
     },
+    {"monitor", (PyCFunction)Container_monitor,
+     METH_VARARGS|METH_KEYWORDS,
+     "monitor() -> tuple\n"
+     "\n"
+     "Get monitor message for the container."
+     "This call is blocking."
+    },
     {"reboot", (PyCFunction)Container_reboot,
      METH_NOARGS,
      "reboot() -> boolean\n"
@@ -2022,6 +2066,13 @@ PyInit__lxc(void)
     PYLXC_EXPORT_CONST(LXC_CREATE_QUIET);
 
     #undef PYLXC_EXPORT_CONST
+
+    /* monitor: type flags */
+    PyDict_SetItemString(d, "LXC_MONITOR_STATE", PyLong_FromLong((long)lxc_monitor_state));
+    PyDict_SetItemString(d, "LXC_MONITOR_PRIORITY", PyLong_FromLong((long)lxc_monitor_priority));
+    PyDict_SetItemString(d, "LXC_MONITOR_EXIT_CODE", PyLong_FromLong((long)lxc_monitor_exit_code));
+    PyDict_SetItemString(d, "LXC_MONITOR_TIMEOUT", PyLong_FromLong((long)lxc_monitor_timeout));
+    PyDict_SetItemString(d, "LXC_MONITOR_ERROR", PyLong_FromLong((long)lxc_monitor_error));
 
     return m;
 }
